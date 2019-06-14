@@ -44,6 +44,8 @@ RUN set -x \
 RUN echo ${IDP_DNS}
 RUN gnutls-cli --insecure --print-cert ${IDP_DNS} </dev/null| sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > /usr/local/share/ca-certificates/idp.crt
 
+RUN csplit -f individual- idp.crt '/-----BEGIN CERTIFICATE-----/' '{*}'
+
 RUN update-ca-certificates
 
 USER sonarqube
