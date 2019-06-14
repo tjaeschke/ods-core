@@ -1,6 +1,8 @@
 FROM openjdk:8-alpine
 
-ENV SONARQUBE_HOME=/opt/sonarqube \
+ENV SONAR_VERSION=7.3 \
+    SONAR_DISTRIBUTION_URL=https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-$SONAR_VERSION.zip \
+    SONARQUBE_HOME=/opt/sonarqube \
     SONARQUBE_JDBC_USERNAME=sonar \
     SONARQUBE_JDBC_PASSWORD=sonar \
     SONARQUBE_JDBC_URL=
