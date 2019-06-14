@@ -13,6 +13,9 @@ EXPOSE 9000
 RUN adduser -S -G root sonarqube
 
 RUN set -x \
+    && apk update \
+    && apk add --no-cache ca-certificates \
+    && apk add --no-cache gnutls-utils \
     && apk add --no-cache gnupg unzip \
     && apk add --no-cache libressl wget \
     && apk add --no-cache su-exec \
