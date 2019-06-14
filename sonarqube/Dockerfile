@@ -48,6 +48,8 @@ RUN cat /tmp/idp.crt|awk 'split_after==1{n++;split_after=0} /-----END CERTIFICAT
 
 RUN update-ca-certificates
 
+RUN keytool -importcert -keypass changeit -file /etc/ssl/certs/ca-certificates.crt -keystore /usr/lib/jvm/java-1.8-openjdk/jre/lib/security/cacerts -noprompt -storepass changeit
+
 USER sonarqube
 
 VOLUME "$SONARQUBE_HOME/data"
