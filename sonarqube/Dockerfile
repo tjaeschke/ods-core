@@ -2,7 +2,7 @@ FROM openjdk:8-alpine
 
 ENV IDP_DNS=example.org \
     SONAR_VERSION=7.3 \
-    SONAR_DISTRIBUTION_URL=https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-$SONAR_VERSION.zip \
+    SONAR_DISTRIBUTION_URL=https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-7.3.zip \
     SONARQUBE_HOME=/opt/sonarqube \
     SONARQUBE_JDBC_USERNAME=sonar \
     SONARQUBE_JDBC_PASSWORD=sonar \
@@ -15,7 +15,6 @@ RUN adduser -S -G root sonarqube
 
 RUN set -x \
     && apk update \
-    && apk add --no-cache csplit \
     && apk add --no-cache ca-certificates \
     && apk add --no-cache gnutls-utils \
     && apk add --no-cache gnupg unzip \
@@ -43,9 +42,9 @@ RUN set -x \
 
 # fetch certificates and store them in tmp directory
 RUN echo ${IDP_DNS}
-RUN gnutls-cli --insecure --print-cert ${IDP_DNS} </dev/null| sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > /usr/local/share/ca-certificates/idp.crt
+RUN gnutls-cli --insecure --print-cert ${IDP_DNS} </dev/null| sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > /tmp/idp.crt
 
-RUN csplit -f individual- idp.crt '/-----BEGIN CERTIFICATE-----/' '{*}'
+RUN cat /tmp/idp.crt|awk 'split_after==1{n++;split_after=0} /-----END CERTIFICATE-----/ {split_after=1} {print > "/usr/local/share/ca-certificates/mycert" n ".crt"}'
 
 RUN update-ca-certificates
 
