@@ -1,6 +1,7 @@
 FROM openjdk:8-alpine
 
-ENV SONAR_VERSION=7.3 \
+ENV IDP_DNS=example.org \
+    SONAR_VERSION=7.3 \
     SONAR_DISTRIBUTION_URL=https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-$SONAR_VERSION.zip \
     SONARQUBE_HOME=/opt/sonarqube \
     SONARQUBE_JDBC_USERNAME=sonar \
@@ -38,6 +39,12 @@ RUN set -x \
     && rm -rf $SONARQUBE_HOME/bin/* \
     && mkdir -p /opt/configuration/sonarqube \
     && chown -R sonarqube:root /opt/configuration/sonarqube
+
+# fetch certificates and store them in tmp directory
+RUN echo ${IDP_DNS}
+RUN gnutls-cli --insecure --print-cert ${IDP_DNS} </dev/null| sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > /usr/local/share/ca-certificates/idp.crt
+
+RUN update-ca-certificates
 
 USER sonarqube
 
