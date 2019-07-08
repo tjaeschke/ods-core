@@ -36,3 +36,14 @@ objects:
         type: Docker
       successfulBuildsHistoryLimit: 5
       triggers: []
+  - apiVersion: v1
+    kind: ImageStream
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: rundeck
+      name: rundeck
+    spec:
+      dockerImageRepository: rundeck
+      lookupPolicy:
+        local: false
