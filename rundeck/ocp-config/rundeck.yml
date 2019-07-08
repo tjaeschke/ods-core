@@ -1,49 +1,173 @@
-apiVersion: v1
+apiVersion: template.openshift.io/v1
 kind: Template
-metadata:
-  annotations: {}
-  creationTimestamp: null
-  name: rundeck
 objects:
-  - apiVersion: v1
-    kind: BuildConfig
-    metadata:
-      annotations: {}
-      creationTimestamp: null
-      labels:
-        app: rundeck
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations: {}
+    labels:
+      app: rundeck
+    name: rundeck
+  spec:
+    ports:
+    - name: 4440-tcp
+      port: 4440
+      protocol: TCP
+      targetPort: 4440
+    selector:
+      deploymentconfig: rundeck
+    sessionAffinity: None
+    type: ClusterIP
+- apiVersion: route.openshift.io/v1
+  kind: Route
+  metadata:
+    annotations: {}
+    labels:
+      app: rundeck
+    name: rundeck
+  spec:
+    host: rundeck-cd.192.168.56.101.nip.io
+    port:
+      targetPort: 4440-tcp
+    to:
+      kind: Service
       name: rundeck
-    spec:
-      failedBuildsHistoryLimit: 5
-      nodeSelector: null
-      output:
-        to:
+      weight: 100
+    wildcardPolicy: None
+- apiVersion: apps.openshift.io/v1
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      original-values.tailor.io/spec.template.spec.containers.0.image: 172.30.1.1:5000/cd/rundeck@sha256:ebd64efda42d27bc872f30fc01c457872c992a8e79e60bf551aa3c33f0cb91db
+    labels:
+      app: rundeck
+    name: rundeck
+  spec:
+    replicas: 1
+    selector:
+      app: rundeck
+      deploymentconfig: rundeck
+    strategy:
+      activeDeadlineSeconds: 21600
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        annotations:
+          openshift.io/generated-by: OpenShiftWebConsole
+        labels:
+          app: rundeck
+          deploymentconfig: rundeck
+      spec:
+        containers:
+        - image: 172.30.1.1:5000/cd/rundeck@sha256:ebd64efda42d27bc872f30fc01c457872c992a8e79e60bf551aa3c33f0cb91db
+          imagePullPolicy: Always
+          name: rundeck
+          ports:
+          - containerPort: 4440
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/lib/rundeck/logs
+            name: rundeck-1
+          - mountPath: /var/rundeck
+            name: rundeck-2
+          - mountPath: /rundeck-config
+            name: rundeck-config-p138p
+            readOnly: true
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - emptyDir: {}
+          name: rundeck-1
+        - emptyDir: {}
+          name: rundeck-2
+        - configMap:
+            defaultMode: 420
+            name: rundeck-config
+          name: rundeck-config-p138p
+    test: false
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - rundeck
+        from:
           kind: ImageStreamTag
           name: rundeck:latest
-      postCommit: {}
-      resources: {}
-      runPolicy: Serial
-      source:
-        contextDir: rundeck
-        git:
-          uri: 	http://cd_user@192.168.56.31:7990/scm/opendevstack/ods-core.git
-          ref: master
-        sourceSecret:
-          name: cd-user-token
-        type: Git
-      strategy:
-        dockerStrategy: {}
-        type: Docker
-      successfulBuildsHistoryLimit: 5
-      triggers: []
-  - apiVersion: v1
-    kind: ImageStream
-    metadata:
-      creationTimestamp: null
-      labels:
-        app: rundeck
-      name: rundeck
-    spec:
-      dockerImageRepository: rundeck
-      lookupPolicy:
-        local: false
+          namespace: cd
+      type: ImageChange
+- apiVersion: build.openshift.io/v1
+  kind: BuildConfig
+  metadata:
+    annotations: {}
+    labels:
+      app: rundeck
+    name: rundeck
+  spec:
+    failedBuildsHistoryLimit: 5
+    nodeSelector: null
+    output:
+      to:
+        kind: ImageStreamTag
+        name: rundeck:latest
+    postCommit: {}
+    resources: {}
+    runPolicy: Serial
+    source:
+      contextDir: rundeck
+      git:
+        ref: master
+        uri: http://cd_user@192.168.56.31:7990/scm/opendevstack/ods-core.git
+      sourceSecret:
+        name: cd-user-token
+      type: Git
+    strategy:
+      dockerStrategy: {}
+      type: Docker
+    successfulBuildsHistoryLimit: 5
+    triggers: []
+- apiVersion: image.openshift.io/v1
+  kind: ImageStream
+  metadata:
+    annotations: {}
+    labels:
+      app: rundeck
+    name: rundeck
+  spec:
+    dockerImageRepository: rundeck
+    lookupPolicy:
+      local: false
+- apiVersion: v1
+  data:
+    rundeck-config.properties: |
+      #loglevel.default is the default log level for jobs: ERROR,WARN,INFO,VERBOSE,DEBUG
+      loglevel.default=INFO
+      rdeck.base=/var/lib/rundeck
+
+      #rss.enabled if set to true enables RSS feeds that are public (non-authenticated)
+      rss.enabled=false
+      # change hostname here
+      dataSource.dbCreate = update
+      dataSource.url = jdbc:h2:file:/var/lib/rundeck/data/rundeckdb;MVCC=true
+
+      grails.serverURL=http://rundeck-cd.192.168.56.101.nip.io
+  kind: ConfigMap
+  metadata:
+    annotations: {}
+    labels:
+      app: rundeck
+    name: rundeck-config
+
