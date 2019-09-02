@@ -7,7 +7,7 @@ ENV SONAR_VERSION=7.3 \
     SONARQUBE_JDBC_PASSWORD=sonar \
     SONARQUBE_JDBC_URL=
 
-IDP_DNS=example.org
+ARG IDP_DNS=example.org
 
 # Http port
 EXPOSE 9000
