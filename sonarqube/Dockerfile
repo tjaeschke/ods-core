@@ -1,12 +1,13 @@
 FROM openjdk:8-alpine
 
-ENV IDP_DNS=example.org \
-    SONAR_VERSION=7.3 \
+ENV SONAR_VERSION=7.3 \
     SONAR_DISTRIBUTION_URL=https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-7.3.zip \
     SONARQUBE_HOME=/opt/sonarqube \
     SONARQUBE_JDBC_USERNAME=sonar \
     SONARQUBE_JDBC_PASSWORD=sonar \
     SONARQUBE_JDBC_URL=
+
+IDP_DNS=example.org
 
 # Http port
 EXPOSE 9000
@@ -48,7 +49,7 @@ RUN cat /tmp/idp.crt|awk 'split_after==1{n++;split_after=0} /-----END CERTIFICAT
 
 RUN update-ca-certificates
 
-RUN keytool -importcert -keypass changeit -file /etc/ssl/certs/ca-certificates.crt -keystore /usr/lib/jvm/java-1.8-openjdk/jre/lib/security/cacerts -noprompt -storepass changeit
+RUN keytool -importcert -keypass changeit -file /tmp/idp.crt -keystore /usr/lib/jvm/java-1.8-openjdk/jre/lib/security/cacerts -noprompt -storepass changeit
 
 USER sonarqube
 
